@@ -37,3 +37,9 @@ python main.py -m TempestIslandHex -o Landscape9
 # Render all maps and all sub-regions in parallel
 python main.py -p
 ```
+
+# TODO
+
+- [ ] Take `RelativeRotation` of landscape into account
+- [ ] Merge landscapes into one file
+- [ ] Do not rely on exports from [UmodelExport](https://www.gildor.org/en/projects/umodel), [FModel](https://fmodel.app/) or [foxhole-umap-textures-extractor](https://github.com/Opa-/foxhole-umap-textures-extractor)
