@@ -204,8 +204,11 @@ class World(object):
                 if self.landscapes_filter and landscape['Name'] not in self.landscapes_filter:
                     continue
                 landscape_textures_dir = os.path.join(self.textures_dir, landscape['Name'])
-                landscape_components = filter(functools.partial(self.filter_landscape_component, landscape_name=landscape['Name']), umap_components)
-                self.landscapes[landscape['Name']] = Landscape(landscape['Name'], landscape_textures_dir, landscape_components)
+                landscape_components = filter(
+                    functools.partial(self.filter_landscape_component, landscape_name=landscape['Name']),
+                    umap_components)
+                self.landscapes[landscape['Name']] = Landscape(landscape['Name'], landscape_textures_dir,
+                                                               landscape_components)
         for landscape_name, landscape in self.landscapes.items():
             landscape.process()
             landscape.fix(self.name, tiles_missing, tiles_misplaced)

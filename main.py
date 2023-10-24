@@ -1,32 +1,29 @@
-import itertools
+import multiprocessing
+import argparse
 import multiprocessing
 import os
-import json
-import yaml
-import argparse
-import cv2
-import random
+from multiprocessing import Pool
 
-import numpy
-from PIL import Image
-from multiprocessing import Process, Pool
-
-from helpers import closed_multiple
-from objects import Landscape, Tile, World
+from objects import World
 
 
 def argparse_init():
     parser = argparse.ArgumentParser(prog='Foxhole Heightmap Generator',
                                      description='Generates Foxhole\'s heightmaps and normal maps')
-    parser.add_argument('-m', '--maps', required=False)
-    parser.add_argument('-o', '--outers', required=False)
+    parser.add_argument('-m', '--maps', required=False,
+                        help='Comma-separated list of maps (will take all from --directory arguments if empty)')
+    parser.add_argument('-o', '--outers', required=False,
+                        help='Comma-separated list of landscapes (will process all of them if empty)')
     parser.add_argument('-d', '--directory', required=False,
-                        default='/Users/opa/Documents/data/UmodelExport/Maps/Master')
+                        default='/Users/opa/Documents/data/UmodelExport/Maps/Master',
+                        help='Directory containing the map export from UmodelExport')
     parser.add_argument('-j', '--json', required=False,
-                        default='/Users/opa/Documents/data/FModelExport/War/Content/Maps/Master/')
+                        default='/Users/opa/Documents/data/FModelExport/War/Content/Maps/Master/',
+                        help='Directory containing JSON export from FModel')
     parser.add_argument('-t', '--textures', required=False,
-                        default='/Users/opa/Documents/Textures')
-    parser.add_argument('-p', '--parallel', action='store_true')
+                        default='/Users/opa/Documents/Textures',
+                        help='Directory containing the exported textures from foxhole-umap-textures-extractor See https://github.com/Opa-/foxhole-umap-textures-extractor')
+    parser.add_argument('-p', '--parallel', action='store_true', help='Render maps in parallel')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('-v', '--verbose', action='store_true')
     return parser.parse_args()
