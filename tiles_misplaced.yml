@@ -1,0 +1,752 @@
+AcrithiaHex:
+  Acrithia:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+    - name: "Texture2D_1001"
+      x: 64
+    - name: "Texture2D_1003"
+      x: 64
+    - name: "Texture2D_1004"
+      x: 64
+    - name: "Texture2D_1005"
+      x: 64
+    - name: "Texture2D_1006"
+      x: 64
+    - name: "Texture2D_1007"
+      x: 64
+    - name: "Texture2D_1008"
+      x: 64
+AllodsBightHex:
+  All:
+    - name: "Texture2D_2168"
+      x: 64
+    - name: "Texture2D_2179"
+      x: 64
+    - name: "Texture2D_21"
+      y: 64
+    - name: "Texture2D_28"
+      y: 64
+    - name: "Texture2D_24"
+      y: 64
+    - name: "Texture2D_27"
+      y: 64
+    - name: "Texture2D_30"
+      y: 64
+    - name: "Texture2D_34"
+      y: 64
+    - name: "Texture2D_35"
+      y: 64
+    - name: "Texture2D_38"
+      y: 64
+    - name: "Texture2D_40"
+      y: 64
+    - name: "Texture2D_48"
+      y: 64
+    - name: "Texture2D_49"
+      y: 64
+    - name: "Texture2D_53"
+      y: 64
+    - name: "Texture2D_54"
+      y: 64
+    - name: "Texture2D_57"
+      y: 64
+    - name: "Texture2D_56"
+      y: 64
+    - name: "Texture2D_59"
+      y: 64
+    - name: "Texture2D_63"
+      y: 64
+    - name: "Texture2D_66"
+      y: 64
+    - name: "Texture2D_67"
+      y: 64
+    - name: "Texture2D_70"
+      y: 64
+    - name: "Texture2D_71"
+      y: 64
+AshFieldsHex:
+  AshFieldsLandscape:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+BasinSionnachHex:
+  Landscape_1:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+    - name: "Texture2D_937"
+      x: 64
+    - name: "Texture2D_938"
+      x: 64
+    - name: "Texture2D_939"
+      x: 64
+    - name: "Texture2D_940"
+      x: 64
+    - name: "Texture2D_941"
+      x: 64
+    - name: "Texture2D_942"
+      x: 64
+CallumsCapeHex:
+  Landscape_1:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+ClahstraHex:
+  Landscape_1:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+ClansheadValleyHex:
+  Landscape_1:
+    - name: "Texture2D_883"
+      x: 64
+    - name: "Texture2D_882"
+      x: 64
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+    - name: "Texture2D_878"
+      x: 64
+    - name: "Texture2D_879"
+      x: 64
+    - name: "Texture2D_880"
+      x: 64
+    - name: "Texture2D_881"
+      x: 64
+DrownedValeHex:
+  DrownedVale:
+    - name: "Texture2D_2518"
+      x: 64
+    - name: "Texture2D_2528"
+      x: 64
+EndlessShoreHex:
+  EndlessShore:
+    - name: "Texture2D_2234"
+      y: 64
+    - name: "Texture2D_2235"
+      y: 64
+    - name: "Texture2D_2236"
+      y: 64
+    - name: "Texture2D_2237"
+      y: 64
+    - name: "Texture2D_2238"
+      y: 64
+    - name: "Texture2D_2239"
+      y: 64
+    - name: "Texture2D_2241"
+      y: 64
+    - name: "Texture2D_2240"
+      y: 64
+    - name: "Texture2D_2242"
+      y: 64
+    - name: "Texture2D_2243"
+      y: 64
+    - name: "Texture2D_2244"
+      y: 64
+    - name: "Texture2D_2245"
+      y: 64
+#  FishermansRowHex:
+#    FishermansRowCentralLandscape:
+GreatMarchHex:
+  greatmarch:
+    - name: "Texture2D_188"
+      x: -64
+HeartlandsHex:
+  Heartlands:
+    - name: "Texture2D_2602"
+      x: 64
+    - name: "Texture2D_2610"
+      x: 64
+    - name: "Texture2D_2614"
+      x: 64
+    - name: "Texture2D_2618"
+      x: 64
+    - name: "Texture2D_2624"
+      x: 64
+    - name: "Texture2D_2628"
+      x: 64
+    - name: "Texture2D_2632"
+      x: 64
+    - name: "Texture2D_2636"
+      x: 64
+    - name: "Texture2D_2722"
+      x: 64
+    - name: "Texture2D_2724"
+      x: 64
+    - name: "Texture2D_2756"
+      x: 64
+    - name: "Texture2D_2760"
+      x: 64
+HowlCountyHex:
+  Landscape_1:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+    - name: "Texture2D_940"
+      x: 64
+    - name: "Texture2D_941"
+      x: 64
+    - name: "Texture2D_942"
+      x: 64
+    - name: "Texture2D_944"
+      x: 64
+KalokaiHex:
+  Landscape_1:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+    - name: "Texture2D_1029"
+      x: 64
+    - name: "Texture2D_1030"
+      x: 64
+    - name: "Texture2D_1033"
+      x: 64
+    - name: "Texture2D_1034"
+      x: 64
+    - name: "Texture2D_1035"
+      x: 64
+    - name: "Texture2D_1036"
+      x: 64
+KingsCageHex:
+  Landscape_1:
+    - name: "Texture2D_263"
+      x: 64
+    - name: "Texture2D_255"
+      x: 64
+LinnMercyHex:
+  LinnMercy:
+    - name: "Texture2D_4445"
+      x: 64
+    - name: "Texture2D_4455"
+      x: 64
+    - name: "Texture2D_4465"
+      x: 64
+LochMorHex:
+  LochMor:
+    - name: "Texture2D_2103"
+      x: 64
+    - name: "Texture2D_2113"
+      x: 64
+MarbanHollow:
+  Marban:
+    - name: "Texture2D_2090"
+      x: 64
+    - name: "Texture2D_2100"
+      x: 64
+MooringCountyHex:
+  Mooring:
+    - name: "Texture2D_1899"
+      x: 64
+    - name: "Texture2D_1902"
+      x: 64
+MorgensCrossingHex:
+  Landscape_1:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+    - name: "Texture2D_942"
+      x: 64
+    - name: "Texture2D_932"
+      x: 64
+    - name: "Texture2D_933"
+      x: 64
+    - name: "Texture2D_937"
+      x: 64
+    - name: "Texture2D_938"
+      x: 64
+    - name: "Texture2D_936"
+      x: 64
+    - name: "Texture2D_935"
+      x: 64
+    - name: "Texture2D_934"
+      x: 64
+    - name: "Texture2D_939"
+      x: 64
+NevishLineHex:
+  Landscape_1:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+OriginHex:
+  OriginLandscape:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+    - name: "Texture2D_1217"
+      y: 64
+    - name: "Texture2D_1218"
+      y: 64
+    - name: "Texture2D_1215"
+      y: 64
+    - name: "Texture2D_1216"
+      y: 64
+    - name: "Texture2D_1214"
+      y: 64
+ReachingTrailHex:
+  Reaching:
+    - name: "Texture2D_64"
+      x: -64
+ReaversPassHex:
+  Landscape_1:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+RedRiverHex:
+  RedRiver:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+SableportHex:
+  Sableport:
+    - name: "Texture2D_0"
+      x: -64
+ShackledChasmHex:
+  ShackledChasm:
+    - name: "Texture2D_170"
+      y: 64
+    - name: "Texture2D_179"
+      y: 64
+    - name: "Texture2D_2299"
+      x: 64
+    - name: "Texture2D_2309"
+      x: 64
+    - name: "Texture2D_2317"
+      x: 64
+    - name: "Texture2D_223"
+      x: 64
+    - name: "Texture2D_222"
+      x: 64
+    - name: "Texture2D_224"
+      x: 64
+    - name: "Texture2D_225"
+      x: 64
+    - name: "Texture2D_218"
+      x: 64
+    - name: "Texture2D_220"
+      x: 64
+SpeakingWoodsHex:
+  Landscape_1:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+StemaLandingHex:
+  DMapHex:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+StlicanShelfHex:
+  Landscape_1:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+StonecradleHex:
+  Stonecradle:
+    - name: "Texture2D_2090"
+      x: 64
+    - name: "Texture2D_2100"
+      x: 64
+TerminusHex:
+  Landscape_1:
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_535"
+      x: 64
+    - name: "Texture2D_1094"
+      x: 64
+    - name: "Texture2D_1096"
+      x: 64
+    - name: "Texture2D_1097"
+      x: 64
+    - name: "Texture2D_1099"
+      x: 64
+TheFingersHex:
+  Landscape_1:
+    - name: "Texture2D_535"
+      x: 64
+    - name: "Texture2D_536"
+      x: 64
+    - name: "Texture2D_1182"
+      x: 64
+    - name: "Texture2D_1181"
+      x: 64
+    - name: "Texture2D_1121"
+      x: 64
+    - name: "Texture2D_1120"
+      x: 64
+    - name: "Texture2D_1119"
+      x: 64
+    - name: "Texture2D_1184"
+      x: 64
+    - name: "Texture2D_1183"
+      x: 64
+    - name: "Texture2D_1180"
+      x: 64
+    - name: "Texture2D_1179"
+      x: 64
+    - name: "Texture2D_1122"
+      x: 64
+    - name: "Texture2D_1192"
+      y: 64
+    - name: "Texture2D_1193"
+      y: 64
+UmbralWildwoodHex:
+  UWWLandscape:
+    - name: "Texture2D_1796"
+      x: 64
+    - name: "Texture2D_1794"
+      x: 64
+    - name: "Texture2D_1792"
+      x: 64
+    - name: "Texture2D_1788"
+      x: 64
+    - name: "Texture2D_1786"
+      x: 64
+    - name: "Texture2D_1778"
+      x: 64
+    - name: "Texture2D_1686"
+      x: 64
+    - name: "Texture2D_1766"
+      x: 64
+    - name: "Texture2D_1758"
+      x: 64
+    - name: "Texture2D_1762"
+      x: 64
+    - name: "Texture2D_1774"
+      x: 64
+    - name: "Texture2D_1770"
+      x: 64
+    - name: "Texture2D_1782"
+      x: 64
+    - name: "Texture2D_1768"
+      x: 64
+    - name: "Texture2D_1772"
+      x: 64
+    - name: "Texture2D_1776"
+      x: 64
+    - name: "Texture2D_1780"
+      x: 64
+    - name: "Texture2D_1842"
+      x: 64
+    - name: "Texture2D_1784"
+      x: 64
+    - name: "Texture2D_1790"
+      x: 64
+    - name: "Texture2D_1822"
+      x: 64
+    - name: "Texture2D_1820"
+      x: 64
+    - name: "Texture2D_1844"
+      x: 64
+    - name: "Texture2D_1838"
+      x: 64
+    - name: "Texture2D_1834"
+      x: 64
+    - name: "Texture2D_1846"
+      x: 64
+    - name: "Texture2D_1852"
+      x: 64
+    - name: "Texture2D_1840"
+      x: 64
+ViperPitHex:
+  Viper:
+    - name: "Texture2D_2090"
+      x: 64
+    - name: "Texture2D_2100"
+      x: 64
+WeatheredExpanseHex:
+  WeatheredExpans:
+    - name: "Texture2D_7"
+      x: 0
+    - name: "Texture2D_8"
+      x: 64
+    - name: "Texture2D_9"
+      x: 64
+    - name: "Texture2D_99"
+      x: 64
+    - name: "Texture2D_100"
+      x: 64
+    - name: "Texture2D_102"
+      x: 64
+    - name: "Texture2D_103"
+      x: 64
+    - name: "Texture2D_104"
+      x: 64
+    - name: "Texture2D_105"
+      x: 64
+    - name: "Texture2D_106"
+      x: 64
+    - name: "Texture2D_107"
+      x: 64
+    - name: "Texture2D_108"
+      x: 64
+    - name: "Texture2D_109"
+      x: 64
+    - name: "Texture2D_110"
+      x: 64
+    - name: "Texture2D_111"
+      x: 64
+    - name: "Texture2D_112"
+      x: 64
+    - name: "Texture2D_113"
+      x: 64
+    - name: "Texture2D_114"
+      x: 64
+    - name: "Texture2D_115"
+      x: 64
+    - name: "Texture2D_116"
+      x: 64
+    - name: "Texture2D_117"
+      x: 64
+    - name: "Texture2D_127"
+      x: 64
+    - name: "Texture2D_132"
+      x: 64
+    - name: "Texture2D_134"
+      x: 64
+    - name: "Texture2D_135"
+      x: 64
+    - name: "Texture2D_137"
+      x: 64
+    - name: "Texture2D_138"
+      x: 64
+    - name: "Texture2D_139"
+      x: 64
+    - name: "Texture2D_140"
+      x: 64
+    - name: "Texture2D_141"
+      x: 64
+    - name: "Texture2D_142"
+      x: 64
+    - name: "Texture2D_143"
+      x: 64
+    - name: "Texture2D_145"
+      x: 64
+    - name: "Texture2D_146"
+      x: 64
+    - name: "Texture2D_147"
+      x: 64
+    - name: "Texture2D_148"
+      x: 64
+    - name: "Texture2D_149"
+      x: 64
+    - name: "Texture2D_150"
+      x: 64
+    - name: "Texture2D_151"
+      x: 64
+    - name: "Texture2D_152"
+      x: 64
+    - name: "Texture2D_153"
+      x: 64
+    - name: "Texture2D_154"
+      x: 64
+    - name: "Texture2D_158"
+      x: 64
+    - name: "Texture2D_159"
+      x: 64
+    - name: "Texture2D_161"
+      x: 64
+    - name: "Texture2D_162"
+      x: 64
+    - name: "Texture2D_165"
+      x: 64
+    - name: "Texture2D_166"
+      x: 64
+    - name: "Texture2D_167"
+      x: 64
+    - name: "Texture2D_168"
+      x: 64
+    - name: "Texture2D_171"
+      x: 64
+    - name: "Texture2D_173"
+      x: 64
+    - name: "Texture2D_174"
+      x: 64
+    - name: "Texture2D_175"
+      x: 64
+    - name: "Texture2D_176"
+      x: 64
+    - name: "Texture2D_177"
+      x: 64
+    - name: "Texture2D_178"
+      x: 64
+    - name: "Texture2D_181"
+      x: 64
+    - name: "Texture2D_183"
+      x: 64
+    - name: "Texture2D_184"
+      x: 64
+    - name: "Texture2D_185"
+      x: 64
+    - name: "Texture2D_187"
+      x: 64
+    - name: "Texture2D_188"
+      x: 64
+    - name: "Texture2D_189"
+      x: 64
+    - name: "Texture2D_193"
+      x: 64
+    - name: "Texture2D_194"
+      x: 64
+    - name: "Texture2D_195"
+      x: 64
+    - name: "Texture2D_196"
+      x: 64
+    - name: "Texture2D_197"
+      x: 64
+    - name: "Texture2D_198"
+      x: 64
+    - name: "Texture2D_199"
+      x: 64
+    - name: "Texture2D_200"
+      x: 64
+    - name: "Texture2D_202"
+      x: 64
+    - name: "Texture2D_204"
+      x: 64
+    - name: "Texture2D_206"
+      x: 64
+    - name: "Texture2D_207"
+      x: 64
+    - name: "Texture2D_208"
+      x: 64
+    - name: "Texture2D_209"
+      x: 64
+    - name: "Texture2D_210"
+      x: 64
+    - name: "Texture2D_211"
+      x: 64
+    - name: "Texture2D_214"
+      x: 64
+    - name: "Texture2D_215"
+      x: 64
+    - name: "Texture2D_217"
+      x: 64
+    - name: "Texture2D_220"
+      x: 64
+    - name: "Texture2D_225"
+      x: 64
+    - name: "Texture2D_227"
+      x: 64
+    - name: "Texture2D_231"
+      x: 64
+    - name: "Texture2D_233"
+      x: 64
+    - name: "Texture2D_235"
+      x: 64
+    - name: "Texture2D_236"
+      x: 64
+    - name: "Texture2D_237"
+      x: 64
+    - name: "Texture2D_238"
+      x: 64
+    - name: "Texture2D_239"
+      x: 64
+    - name: "Texture2D_241"
+      x: 64
+    - name: "Texture2D_242"
+      x: 64
+    - name: "Texture2D_252"
+      x: 64
+    - name: "Texture2D_253"
+      x: 64
+    - name: "Texture2D_256"
+      x: 64
+    - name: "Texture2D_277"
+      x: 64
+    - name: "Texture2D_278"
+      x: 64
+    - name: "Texture2D_279"
+      x: 64
+    - name: "Texture2D_281"
+      x: 64
+    - name: "Texture2D_282"
+      x: 64
+    - name: "Texture2D_283"
+      x: 64
+    - name: "Texture2D_284"
+      x: 64
+    - name: "Texture2D_294"
+      x: 64
+    - name: "Texture2D_295"
+      x: 64
+    - name: "Texture2D_299"
+      x: 64
+    - name: "Texture2D_303"
+      x: 64
+    - name: "Texture2D_304"
+      x: 64
+    - name: "Texture2D_305"
+      x: 64
+    - name: "Texture2D_307"
+      x: 64
+    - name: "Texture2D_306"
+      x: 64
+    - name: "Texture2D_308"
+      x: 64
+    - name: "Texture2D_310"
+      x: 64
+    - name: "Texture2D_311"
+      x: 64
+    - name: "Texture2D_312"
+      x: 64
+    - name: "Texture2D_313"
+      x: 64
+    - name: "Texture2D_315"
+      x: 64
+    - name: "Texture2D_316"
+      x: 64
+    - name: "Texture2D_317"
+      x: 64
+    - name: "Texture2D_320"
+      x: 64
+    - name: "Texture2D_321"
+      x: 64
+    - name: "Texture2D_323"
+      x: 64
+    - name: "Texture2D_326"
+      x: 64
+    - name: "Texture2D_327"
+      x: 64
+    - name: "Texture2D_328"
+      x: 64
+    - name: "Texture2D_329"
+      x: 64
+    - name: "Texture2D_330"
+      x: 64
+    - name: "Texture2D_331"
+      x: 64
+    - name: "Texture2D_333"
+      x: 64
+    - name: "Texture2D_334"
+      x: 64
+    - name: "Texture2D_336"
+      x: 64
+    - name: "Texture2D_338"
+      x: 64
+    - name: "Texture2D_339"
+      x: 64
+    - name: "Texture2D_340"
+      x: 64
+    - name: "Texture2D_342"
+      x: 64
+WestgateHex:
+  Westgate2:
+    - name: "Texture2D_345"
+      x: -64

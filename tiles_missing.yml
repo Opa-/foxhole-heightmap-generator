@@ -1,0 +1,15 @@
+DeadlandsHex:
+  DLLandscape:
+  - name: "Texture2D_402"
+    x: 0
+    y: 0
+FarranacCoastHex:
+  Farranac:
+    - name: "Texture2D_37"
+      x: 0
+      y: 0
+TempestIslandHex:
+  Landscape9:
+    - name: "Texture2D_678"
+      x: 0
+      y: 0
