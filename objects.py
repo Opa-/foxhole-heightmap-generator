@@ -12,6 +12,13 @@ from helpers import closed_multiple
 
 
 @dataclass
+class Vector:
+    x: float
+    y: float
+    z: float
+
+
+@dataclass
 class Point:
     x: int
     y: int
@@ -71,8 +78,10 @@ class Landscape(object):
     top_left: Point
     bottom_right: Point
     padding: Point
+    relative_location: Vector
+    relative_rotation: Vector
 
-    def __init__(self, name: str, textures_dir: str, raw_components: list):
+    def __init__(self, name: str, textures_dir: str, raw_components: list, root_component: dict):
         self.name = name
         self.textures_dir = textures_dir
         self.raw_components = raw_components
@@ -80,6 +89,16 @@ class Landscape(object):
         self.top_left = Point(0, 0)
         self.bottom_right = Point(0, 0)
         self.padding = Point(0, 0)
+        try:
+            rl = root_component['Properties']['RelativeLocation']
+            self.relative_location = Vector(rl['X'], rl['Y'], rl['Z'])
+        except KeyError:
+            self.relative_location = Vector(0, 0, 0)
+        try:
+            rr = root_component['Properties']['RelativeRotation']
+            self.relative_rotation = Vector(rr['Pitch'], rr['Yaw'], rr['Roll'])
+        except KeyError:
+            self.relative_rotation = Vector(0, 0, 0)
 
     def __hash__(self):
         return self.name
@@ -166,6 +185,8 @@ class Landscape(object):
                 print(f"‼️ Not found {e} for {self.name} landscape")
                 pass
         heightmap_img = heightmap_img.convert("RGBA")
+        heightmap_img = heightmap_img.rotate(-self.relative_rotation.y)
+        normalmap_img = normalmap_img.rotate(-self.relative_rotation.y)
         heightmap_img.save(f"maps/{map_name}_{self.name}_heightmap.png", "PNG")
         normalmap_img.save(f"maps/{map_name}_{self.name}_normalmap.png", "PNG")
         print(f"✅ {map_name}:{self.name}")
@@ -193,6 +214,10 @@ class World(object):
     def filter_landscape_component(x, landscape_name):
         return x['Type'] == 'LandscapeComponent' and x['Outer'] == landscape_name
 
+    @staticmethod
+    def filter_landscape_root_component(x, landscape_name):
+        return x['Type'] == 'SceneComponent' and x['Name'] == 'RootComponent0' and x['Outer'] == landscape_name
+
     def process(self):
         with open('tiles_missing.yml') as f:
             tiles_missing = yaml.safe_load(f)
@@ -207,8 +232,10 @@ class World(object):
                 landscape_components = filter(
                     functools.partial(self.filter_landscape_component, landscape_name=landscape['Name']),
                     umap_components)
+                # Fetching related "RootComponent0" to get Landscape relative position and rotation
+                landscape_root_component = next(filter(functools.partial(self.filter_landscape_root_component, landscape_name=landscape['Name']), umap_components))
                 self.landscapes[landscape['Name']] = Landscape(landscape['Name'], landscape_textures_dir,
-                                                               landscape_components)
+                                                               landscape_components, landscape_root_component)
         for landscape_name, landscape in self.landscapes.items():
             landscape.process()
             landscape.fix(self.name, tiles_missing, tiles_misplaced)
