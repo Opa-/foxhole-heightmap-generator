@@ -89,10 +89,16 @@ class Landscape(object):
         self.top_left = Point(0, 0)
         self.bottom_right = Point(0, 0)
         self.padding = Point(0, 0)
-        rl = root_component['Properties']['RelativeLocation']
-        self.relative_location = Vector(rl['X'], rl['Y'], rl['Z'])
-        rr = root_component['Properties']['RelativeRotation']
-        self.relative_rotation = Vector(rr['Pitch'], rr['Yaw'], rr['Roll'])
+        try:
+            rl = root_component['Properties']['RelativeLocation']
+            self.relative_location = Vector(rl['X'], rl['Y'], rl['Z'])
+        except KeyError:
+            self.relative_location = Vector(0, 0, 0)
+        try:
+            rr = root_component['Properties']['RelativeRotation']
+            self.relative_rotation = Vector(rr['Pitch'], rr['Yaw'], rr['Roll'])
+        except KeyError:
+            self.relative_rotation = Vector(0, 0, 0)
 
     def __hash__(self):
         return self.name
@@ -179,6 +185,8 @@ class Landscape(object):
                 print(f"‼️ Not found {e} for {self.name} landscape")
                 pass
         heightmap_img = heightmap_img.convert("RGBA")
+        heightmap_img = heightmap_img.rotate(-self.relative_rotation.y)
+        normalmap_img = normalmap_img.rotate(-self.relative_rotation.y)
         heightmap_img.save(f"maps/{map_name}_{self.name}_heightmap.png", "PNG")
         normalmap_img.save(f"maps/{map_name}_{self.name}_normalmap.png", "PNG")
         print(f"✅ {map_name}:{self.name}")
