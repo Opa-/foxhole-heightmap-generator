@@ -6,9 +6,10 @@ from dataclasses import dataclass
 from typing import Dict, List
 
 import yaml
-from PIL import Image
+import numpy as np
+import cv2
 
-from helpers import closed_multiple
+from helpers import closed_multiple, rotate_image
 
 
 @dataclass
@@ -164,31 +165,26 @@ class Landscape(object):
             self.add_tile(tile)
 
     def generate(self, map_name: str):
-        heightmap_img = Image.new("I", (self.width, self.height), 0)
-        normalmap_img = Image.new("RGB", (self.width, self.height), 0)
+        heightmap_img = np.zeros((self.height + 64, self.width + 64), np.uint8)
+        normalmap_img = np.zeros((self.height + 64, self.width + 64, 3), np.uint8)
         for tile_name, tile in sorted(self.tiles.items(), key=lambda x: x[1]):
+            tile_path = os.path.join(self.textures_dir, '.'.join([tile.name, 'png']))
             try:
-                tile_path = os.path.join(self.textures_dir, '.'.join([tile.name, 'png']))
-                tile_img = Image.open(tile_path)
-                tile_r, tile_g, tile_b, tile_a = tile_img.split()
-                tile_w = Image.new("L", (tile_a.size[0], tile_a.size[1]), 255)
-                tile_img.close()
-
-                heightmap_img.paste(tile_r, (tile.pos.x + self.padding.x, tile.pos.y + self.padding.y))
-                normalmap_img.paste(
-                    Image.merge("RGB", (tile_b, tile_a, tile_w)),
-                    (tile.pos.x + self.padding.x, tile.pos.y + self.padding.y),
-                )
-            except ValueError:
-                pass
+                tile_img = cv2.imread(tile_path, cv2.IMREAD_UNCHANGED)
+                tile_b, tile_g, tile_r, tile_a = cv2.split(tile_img)
+                tile_w = np.full((tile_a.shape[0], tile_a.shape[1], 1), 255, np.uint8)
+                heightmap_img[tile.pos.y + self.padding.y: tile.pos.y + self.padding.y + tile_r.shape[0], tile.pos.x + self.padding.x:tile.pos.x + self.padding.x + tile_r.shape[1]] = tile_r
+                tile_normal = cv2.merge([tile_w, tile_a, tile_b])
+                normalmap_img[tile.pos.y + self.padding.y: tile.pos.y + self.padding.y + tile_r.shape[0], tile.pos.x + self.padding.x:tile.pos.x + self.padding.x + tile_r.shape[1]] = tile_normal
+            except ValueError as e:
+                print(f"‼️ Could not paste {tile_path} : {e}")
             except FileNotFoundError as e:
                 print(f"‼️ Not found {e} for {self.name} landscape")
                 pass
-        heightmap_img = heightmap_img.convert("RGBA")
-        heightmap_img = heightmap_img.rotate(-self.relative_rotation.y)
-        normalmap_img = normalmap_img.rotate(-self.relative_rotation.y)
-        heightmap_img.save(f"maps/{map_name}_{self.name}_heightmap.png", "PNG")
-        normalmap_img.save(f"maps/{map_name}_{self.name}_normalmap.png", "PNG")
+        heightmap_img = rotate_image(heightmap_img, -self.relative_rotation.y)
+        normalmap_img = rotate_image(normalmap_img, -self.relative_rotation.y)
+        cv2.imwrite(f"maps/{map_name}_{self.name}_heightmap.png", heightmap_img)
+        cv2.imwrite(f"maps/{map_name}_{self.name}_normalmap.png", normalmap_img)
         print(f"✅ {map_name}:{self.name}")
 
 
