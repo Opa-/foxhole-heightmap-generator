@@ -40,6 +40,7 @@ python main.py -p
 
 # TODO
 
-- [ ] Take `RelativeRotation` of landscape into account
+- [x] Take `RelativeRotation` of landscape into account
 - [ ] Merge landscapes into one file
+- [ ] Position/scale landscapes based on map images
 - [ ] Do not rely on exports from [UmodelExport](https://www.gildor.org/en/projects/umodel), [FModel](https://fmodel.app/) or [foxhole-umap-textures-extractor](https://github.com/Opa-/foxhole-umap-textures-extractor)
