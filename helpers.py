@@ -4,11 +4,13 @@ def closed_multiple(n, x):
     return int(n)
 
 
-def rotate_image(image, angle):  # https://stackoverflow.com/a/9042907
+def rotate_image(img, angle):  # https://stackoverflow.com/a/47248339
     import cv2
     import numpy as np
 
-    image_center = tuple(np.array(image.shape[1::-1]) / 2)
-    rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
-    result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
-    return result
+    size_reverse = np.array(img.shape[1::-1]) # swap x with y
+    M = cv2.getRotationMatrix2D(tuple(size_reverse / 2.), angle, 1.)
+    MM = np.absolute(M[:,:2])
+    size_new = MM @ size_reverse
+    M[:,-1] += (size_new - size_reverse) / 2.
+    return cv2.warpAffine(img, M, tuple(size_new.astype(int)))

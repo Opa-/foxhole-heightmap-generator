@@ -169,7 +169,7 @@ class Landscape(object):
             debug_img = np.zeros((self.height + 500, self.width + 500, 3), np.uint8)
             cv2.rectangle(debug_img, (0, 0), (self.width, self.height), (255, 255, 255), 3)
         heightmap_img = np.zeros((self.height, self.width), np.uint8)
-        normalmap_img = np.zeros((self.height, self.width, 3), np.uint8)
+        normalmap_img = np.zeros((self.height, self.width, 4), np.uint8)
         for tile_name, tile in sorted(self.tiles.items(), key=lambda x: x[1]):
             tile_path = os.path.join(self.textures_dir, '.'.join([tile.name, 'png']))
             pos_y = tile.pos.y - self.top_left.y
@@ -179,7 +179,7 @@ class Landscape(object):
                 tile_b, tile_g, tile_r, tile_a = cv2.split(tile_img)
                 tile_w = np.full((tile_a.shape[0], tile_a.shape[1], 1), 255, np.uint8)
                 heightmap_img[pos_y: pos_y + tile_r.shape[0], pos_x:pos_x + tile_r.shape[1]] = tile_r
-                tile_normal = cv2.merge([tile_w, tile_a, tile_b])
+                tile_normal = cv2.merge([tile_w, tile_a, tile_b, tile_w])
                 normalmap_img[pos_y: pos_y + tile_r.shape[0], pos_x:pos_x + tile_r.shape[1]] = tile_normal
             except ValueError as e:
                 print(f"‼️ Could not paste {tile_path} : {e}")
@@ -190,12 +190,12 @@ class Landscape(object):
                 random_color = (random.randrange(150, 255), random.randrange(150, 255), random.randrange(150, 255))
                 cv2.circle(debug_img, (pos_x, pos_y), 3, random_color, 5)
                 cv2.rectangle(debug_img, (pos_x, pos_y), (pos_x + tile_img.shape[1], pos_y + tile_img.shape[0]), random_color, 3)
-                t = cv2.putText(debug_img, tile_name.split('_')[-1], (pos_x + int(tile_img.shape[1]/2), pos_y + int(tile_img.shape[0]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, random_color, 2)
-                cv2.putText(debug_img, str(tile.pos), (pos_x + int(tile_img.shape[1]/2), pos_y + int(tile_img.shape[0]/2) + 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, random_color, 2)
-                # cv2.imshow('debug', debug_img)
-                # cv2.waitKey(0)
-        # heightmap_img = rotate_image(heightmap_img, -self.relative_rotation.y)
-        # normalmap_img = rotate_image(normalmap_img, -self.relative_rotation.y)
+                cv2.putText(debug_img, tile_name.split('_')[-1], (pos_x + int(tile_img.shape[1]/4), pos_y + int(tile_img.shape[0]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, random_color, 2)
+        _, _, _, mask = cv2.split(normalmap_img)
+        heightmap_img = cv2.cvtColor(heightmap_img, cv2.COLOR_GRAY2BGRA)
+        heightmap_img[:, :, 3] = mask
+        heightmap_img = rotate_image(heightmap_img, -self.relative_rotation.y)
+        normalmap_img = rotate_image(normalmap_img, -self.relative_rotation.y)
         if debug is True:
             cv2.imwrite(f"maps/{map_name}_{self.name}_debug.png", debug_img)
         cv2.imwrite(f"maps/{map_name}_{self.name}_heightmap.png", heightmap_img)
