@@ -1,6 +1,7 @@
 import functools
 import json
 import os
+import random
 import re
 from dataclasses import dataclass
 from typing import Dict, List
@@ -23,6 +24,12 @@ class Vector:
 class Point:
     x: int
     y: int
+
+
+@dataclass
+class Size:
+    width: int
+    height: int
 
 
 class Tile(object):
@@ -60,10 +67,10 @@ class Tile(object):
                              landscape_component["Properties"]["HeightmapTexture"]["ObjectName"]).group()
             return cls(name, Point(x, y))
         except KeyError as e:
-            print(f"❗️ Missing property {e} for {landscape_component['Name']}")
+            print(f"⚠️\tMissing property {e} for {landscape_component['Name']}")
             return None
         except AttributeError as e:
-            print(f"❗️ Cannot extract name for {landscape_component['Name']}")
+            print(f"❗\tCannot extract name for {landscape_component['Name']}")
             return None
 
     @property
@@ -75,21 +82,26 @@ class Landscape(object):
     name: str
     textures_dir: str
     raw_components: List
+    texture_components: Dict
+    tiles_misplaced: Dict
+    tiles_missing: Dict
     tiles: Dict[str, Tile]
     top_left: Point
     bottom_right: Point
-    padding: Point
     relative_location: Vector
     relative_rotation: Vector
 
-    def __init__(self, name: str, textures_dir: str, raw_components: list, root_component: dict):
+    def __init__(self, name: str, textures_dir: str, tiles_misplaced: dict, tiles_missing: dict, raw_components: list, texture_components: list, root_component: dict):
         self.name = name
         self.textures_dir = textures_dir
         self.raw_components = raw_components
+        self.tiles_misplaced = tiles_misplaced
+        self.tiles_missing = tiles_missing
+        self.texture_components = {texture['Name']: texture for texture in texture_components}
         self.tiles = dict()
-        self.top_left = Point(0, 0)
-        self.bottom_right = Point(0, 0)
-        self.padding = Point(0, 0)
+        self.top_left = None
+        self.bottom_right = None
+        # self.padding = Point(0, 0)
         try:
             rl = root_component['Properties']['RelativeLocation']
             self.relative_location = Vector(rl['X'], rl['Y'], rl['Z'])
@@ -113,79 +125,82 @@ class Landscape(object):
                 self.tiles[tile.name].pos = tile.pos
         else:
             self.tiles[tile.name] = tile
-        self._update_coord(self.tiles[tile.name].pos)
-
-    def fix(self, map_name, tiles_missing, tiles_misplaced):
-        try:
-            self._fix_missing(tiles_missing[map_name][self.name])
-        except KeyError:
-            pass
-        try:
-            self._fix_misplaced(tiles_misplaced[map_name][self.name])
-        except KeyError:
-            pass
-
-    def _fix_missing(self, missing_tiles):
-        for tile_data in missing_tiles:
-            tile = Tile(tile_data['name'], Point(tile_data['x'], tile_data['y']))
-            self.add_tile(tile)
-
-    def _fix_misplaced(self, misplaced_tiles):
-        for tile_data in misplaced_tiles:
-            self.tiles[tile_data['name']].pos.x += tile_data['x'] if 'x' in tile_data else 0
-            self.tiles[tile_data['name']].pos.y += tile_data['y'] if 'y' in tile_data else 0
 
     @property
     def width(self):
-        return self.bottom_right.x - self.top_left.x + 64
+        return self.bottom_right.x - self.top_left.x
 
     @property
     def height(self):
-        return self.bottom_right.y - self.top_left.y + 64
+        return self.bottom_right.y - self.top_left.y
 
-    def _update_coord(self, pos):
-        if pos.x < self.top_left.x:
-            self.top_left.x = pos.x
-        if pos.y < self.top_left.y:
-            self.top_left.y = pos.y
-        if pos.x > self.bottom_right.x:
-            self.bottom_right.x = pos.x
-        if pos.y > self.bottom_right.y:
-            self.bottom_right.y = pos.y
-        if self.top_left.x < 0:
-            self.padding.x = -self.top_left.x
-        if self.top_left.y < 0:
-            self.padding.y = -self.top_left.y
+    def _update_coord(self, tile: Tile, size: Size):
+        if not self.top_left:
+            self.top_left = Point(tile.pos.x, tile.pos.y)
+        if not self.bottom_right:
+            self.bottom_right = Point(tile.pos.x + size.width, tile.pos.y + size.height)
+        if tile.pos.x < self.top_left.x:
+            self.top_left.x = tile.pos.x
+        if tile.pos.y < self.top_left.y:
+            self.top_left.y = tile.pos.y
+        if tile.pos.x + size.width > self.bottom_right.x:
+            self.bottom_right.x = tile.pos.x + size.width
+        if tile.pos.y + size.height > self.bottom_right.y:
+            self.bottom_right.y = tile.pos.y + size.height
 
     def process(self):
         for raw_component in self.raw_components:
             tile = Tile.from_landscape_component(raw_component)
             if not tile:
                 continue
+            if tile.name in self.tiles_misplaced.keys():
+                tile.pos = Point(self.tiles_misplaced[tile.name]['x'], self.tiles_misplaced[tile.name]['y'])
             self.add_tile(tile)
+        for tile_name, tile_data in self.tiles_missing.items():
+            tile = Tile(tile_name, Point(tile_data['x'], tile_data['y']))
+            self.add_tile(tile)
+        for tile_name, tile in self.tiles.items():
+            tile_raw_size = self.texture_components[tile.name]['Properties']['ImportedSize']
+            tile_size = Size(tile_raw_size['X'], tile_raw_size['Y'])
+            self._update_coord(self.tiles[tile.name], tile_size)
 
-    def generate(self, map_name: str):
-        heightmap_img = np.zeros((self.height + 64, self.width + 64), np.uint8)
-        normalmap_img = np.zeros((self.height + 64, self.width + 64, 3), np.uint8)
+    def generate(self, map_name: str, debug=False):
+        if debug is True:
+            debug_img = np.zeros((self.height + 500, self.width + 500, 3), np.uint8)
+            cv2.rectangle(debug_img, (0, 0), (self.width, self.height), (255, 255, 255), 3)
+        heightmap_img = np.zeros((self.height, self.width), np.uint8)
+        normalmap_img = np.zeros((self.height, self.width, 3), np.uint8)
         for tile_name, tile in sorted(self.tiles.items(), key=lambda x: x[1]):
             tile_path = os.path.join(self.textures_dir, '.'.join([tile.name, 'png']))
+            pos_y = tile.pos.y - self.top_left.y
+            pos_x = tile.pos.x - self.top_left.x
             try:
                 tile_img = cv2.imread(tile_path, cv2.IMREAD_UNCHANGED)
                 tile_b, tile_g, tile_r, tile_a = cv2.split(tile_img)
                 tile_w = np.full((tile_a.shape[0], tile_a.shape[1], 1), 255, np.uint8)
-                heightmap_img[tile.pos.y + self.padding.y: tile.pos.y + self.padding.y + tile_r.shape[0], tile.pos.x + self.padding.x:tile.pos.x + self.padding.x + tile_r.shape[1]] = tile_r
+                heightmap_img[pos_y: pos_y + tile_r.shape[0], pos_x:pos_x + tile_r.shape[1]] = tile_r
                 tile_normal = cv2.merge([tile_w, tile_a, tile_b])
-                normalmap_img[tile.pos.y + self.padding.y: tile.pos.y + self.padding.y + tile_r.shape[0], tile.pos.x + self.padding.x:tile.pos.x + self.padding.x + tile_r.shape[1]] = tile_normal
+                normalmap_img[pos_y: pos_y + tile_r.shape[0], pos_x:pos_x + tile_r.shape[1]] = tile_normal
             except ValueError as e:
                 print(f"‼️ Could not paste {tile_path} : {e}")
             except FileNotFoundError as e:
                 print(f"‼️ Not found {e} for {self.name} landscape")
                 pass
-        heightmap_img = rotate_image(heightmap_img, -self.relative_rotation.y)
-        normalmap_img = rotate_image(normalmap_img, -self.relative_rotation.y)
+            if debug is True:
+                random_color = (random.randrange(150, 255), random.randrange(150, 255), random.randrange(150, 255))
+                cv2.circle(debug_img, (pos_x, pos_y), 3, random_color, 5)
+                cv2.rectangle(debug_img, (pos_x, pos_y), (pos_x + tile_img.shape[1], pos_y + tile_img.shape[0]), random_color, 3)
+                t = cv2.putText(debug_img, tile_name.split('_')[-1], (pos_x + int(tile_img.shape[1]/2), pos_y + int(tile_img.shape[0]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, random_color, 2)
+                cv2.putText(debug_img, str(tile.pos), (pos_x + int(tile_img.shape[1]/2), pos_y + int(tile_img.shape[0]/2) + 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, random_color, 2)
+                # cv2.imshow('debug', debug_img)
+                # cv2.waitKey(0)
+        # heightmap_img = rotate_image(heightmap_img, -self.relative_rotation.y)
+        # normalmap_img = rotate_image(normalmap_img, -self.relative_rotation.y)
+        if debug is True:
+            cv2.imwrite(f"maps/{map_name}_{self.name}_debug.png", debug_img)
         cv2.imwrite(f"maps/{map_name}_{self.name}_heightmap.png", heightmap_img)
         cv2.imwrite(f"maps/{map_name}_{self.name}_normalmap.png", normalmap_img)
-        print(f"✅ {map_name}:{self.name}")
+        print(f"✅\t{map_name}:{self.name}")
 
 
 class World(object):
@@ -214,11 +229,15 @@ class World(object):
     def filter_landscape_root_component(x, landscape_name):
         return x['Type'] == 'SceneComponent' and x['Name'] == 'RootComponent0' and x['Outer'] == landscape_name
 
-    def process(self):
+    @staticmethod
+    def filter_texture_component(x, landscape_name):
+        return x['Type'] == 'Texture2D' and x['Outer'] == landscape_name
+
+    def process(self, debug=False):
         with open('tiles_missing.yml') as f:
-            tiles_missing = yaml.safe_load(f)
+            tiles_missing_yaml = yaml.safe_load(f)
         with open('tiles_misplaced.yml') as f:
-            tiles_misplaced = yaml.safe_load(f)
+            tiles_misplaced_yaml = yaml.safe_load(f)
         with open(self.json_file, 'r') as f:
             umap_components = json.load(f)
             for landscape in filter(self.filter_landscape, umap_components):
@@ -228,11 +247,17 @@ class World(object):
                 landscape_components = filter(
                     functools.partial(self.filter_landscape_component, landscape_name=landscape['Name']),
                     umap_components)
+                texture_components = filter(
+                    functools.partial(self.filter_texture_component, landscape_name=landscape['Name']),
+                    umap_components
+                )
                 # Fetching related "RootComponent0" to get Landscape relative position and rotation
                 landscape_root_component = next(filter(functools.partial(self.filter_landscape_root_component, landscape_name=landscape['Name']), umap_components))
+                tiles_missing = tiles_missing_yaml.get(self.name, {}).get(landscape['Name'], {})
+                tiles_misplaced = tiles_misplaced_yaml.get(self.name, {}).get(landscape['Name'], {})
                 self.landscapes[landscape['Name']] = Landscape(landscape['Name'], landscape_textures_dir,
-                                                               landscape_components, landscape_root_component)
+                                                               tiles_misplaced, tiles_missing,
+                                                               landscape_components, texture_components, landscape_root_component)
         for landscape_name, landscape in self.landscapes.items():
             landscape.process()
-            landscape.fix(self.name, tiles_missing, tiles_misplaced)
-            landscape.generate(self.name)
+            landscape.generate(self.name, debug=debug)

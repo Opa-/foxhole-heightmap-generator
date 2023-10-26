@@ -40,4 +40,4 @@ if __name__ == "__main__":
             pool.map(World.process, worlds)
     else:
         for w in worlds:
-            w.process()
+            w.process(debug=args.debug)
