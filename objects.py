@@ -1,16 +1,16 @@
 import functools
-import json
-import os
 import random
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, List
 
-import yaml
-import numpy as np
 import cv2
+import numpy as np
+import yaml
+from UE4Parse.Assets.PackageReader import EPackageLoadMode, Package
 
-from helpers import closed_multiple, rotate_image
+from helpers import closed_multiple, rotate_image, FoxholeFileProvider
 
 
 @dataclass
@@ -80,7 +80,6 @@ class Tile(object):
 
 class Landscape(object):
     name: str
-    textures_dir: str
     raw_components: List
     texture_components: Dict
     tiles_misplaced: Dict
@@ -91,9 +90,9 @@ class Landscape(object):
     relative_location: Vector
     relative_rotation: Vector
 
-    def __init__(self, name: str, textures_dir: str, tiles_misplaced: dict, tiles_missing: dict, raw_components: list, texture_components: list, root_component: dict):
+    def __init__(self, name: str, tiles_misplaced: dict, tiles_missing: dict, raw_components: list,
+                 texture_components: list, root_component: dict):
         self.name = name
-        self.textures_dir = textures_dir
         self.raw_components = raw_components
         self.tiles_misplaced = tiles_misplaced
         self.tiles_missing = tiles_missing
@@ -164,33 +163,40 @@ class Landscape(object):
             tile_size = Size(tile_raw_size['X'], tile_raw_size['Y'])
             self._update_coord(self.tiles[tile.name], tile_size)
 
-    def generate(self, map_name: str, debug=False):
+    def generate(self, package: Package, map_name: str, debug=False):
         if debug is True:
             debug_img = np.zeros((self.height + 500, self.width + 500, 3), np.uint8)
             cv2.rectangle(debug_img, (0, 0), (self.width, self.height), (255, 255, 255), 3)
         heightmap_img = np.zeros((self.height, self.width), np.uint8)
         normalmap_img = np.zeros((self.height, self.width, 4), np.uint8)
         for tile_name, tile in sorted(self.tiles.items(), key=lambda x: x[1]):
-            tile_path = os.path.join(self.textures_dir, '.'.join([tile.name, 'png']))
             pos_y = tile.pos.y - self.top_left.y
             pos_x = tile.pos.x - self.top_left.x
             try:
-                tile_img = cv2.imread(tile_path, cv2.IMREAD_UNCHANGED)
-                tile_b, tile_g, tile_r, tile_a = cv2.split(tile_img)
+                texture_2d = list(filter(lambda x: x.name.string == tile_name and x.OuterIndex.Name.string == self.name,
+                                         package.ExportMap))[0]
+                tile_img = np.array(texture_2d.exportObject.decode())
+                tile_r, tile_g, tile_b, tile_a = cv2.split(tile_img)
                 tile_w = np.full((tile_a.shape[0], tile_a.shape[1], 1), 255, np.uint8)
                 heightmap_img[pos_y: pos_y + tile_r.shape[0], pos_x:pos_x + tile_r.shape[1]] = tile_r
                 tile_normal = cv2.merge([tile_w, tile_a, tile_b, tile_w])
                 normalmap_img[pos_y: pos_y + tile_r.shape[0], pos_x:pos_x + tile_r.shape[1]] = tile_normal
+            except IndexError as e:
+                print(f"‼️ {tile_name} not found for {self.name}")
+                pass
             except ValueError as e:
-                print(f"‼️ Could not paste {tile_path} : {e}")
+                print(f"‼️ Could not paste {tile_name} : {e}")
             except FileNotFoundError as e:
                 print(f"‼️ Not found {e} for {self.name} landscape")
                 pass
             if debug is True:
                 random_color = (random.randrange(150, 255), random.randrange(150, 255), random.randrange(150, 255))
                 cv2.circle(debug_img, (pos_x, pos_y), 3, random_color, 5)
-                cv2.rectangle(debug_img, (pos_x, pos_y), (pos_x + tile_img.shape[1], pos_y + tile_img.shape[0]), random_color, 3)
-                cv2.putText(debug_img, tile_name.split('_')[-1], (pos_x + int(tile_img.shape[1]/4), pos_y + int(tile_img.shape[0]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, random_color, 2)
+                cv2.rectangle(debug_img, (pos_x, pos_y), (pos_x + tile_img.shape[1], pos_y + tile_img.shape[0]),
+                              random_color, 3)
+                cv2.putText(debug_img, tile_name.split('_')[-1],
+                            (pos_x + int(tile_img.shape[1] / 4), pos_y + int(tile_img.shape[0] / 2)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, random_color, 2)
         _, _, _, mask = cv2.split(normalmap_img)
         heightmap_img = cv2.cvtColor(heightmap_img, cv2.COLOR_GRAY2BGRA)
         heightmap_img[:, :, 3] = mask
@@ -204,16 +210,14 @@ class Landscape(object):
 
 
 class World(object):
+    pak_path: str
     name: str
-    json_file: str
-    textures_dir: str
     landscapes: Dict[str, Landscape]
     landscapes_filter: List[str]
 
-    def __init__(self, name: str, json_path: str, textures_dir: str, landscapes_filter: list = None):
+    def __init__(self, pak_path: str, name: str, landscapes_filter: list = None):
+        self.pak_path = pak_path
         self.name = name
-        self.json_file = os.path.join(json_path, '.'.join([name, 'json']))
-        self.textures_dir = os.path.join(textures_dir, name)
         self.landscapes = dict()
         self.landscapes_filter = landscapes_filter
 
@@ -238,26 +242,33 @@ class World(object):
             tiles_missing_yaml = yaml.safe_load(f)
         with open('tiles_misplaced.yml') as f:
             tiles_misplaced_yaml = yaml.safe_load(f)
-        with open(self.json_file, 'r') as f:
-            umap_components = json.load(f)
-            for landscape in filter(self.filter_landscape, umap_components):
-                if self.landscapes_filter and landscape['Name'] not in self.landscapes_filter:
-                    continue
-                landscape_textures_dir = os.path.join(self.textures_dir, landscape['Name'])
-                landscape_components = filter(
-                    functools.partial(self.filter_landscape_component, landscape_name=landscape['Name']),
-                    umap_components)
-                texture_components = filter(
-                    functools.partial(self.filter_texture_component, landscape_name=landscape['Name']),
-                    umap_components
-                )
-                # Fetching related "RootComponent0" to get Landscape relative position and rotation
-                landscape_root_component = next(filter(functools.partial(self.filter_landscape_root_component, landscape_name=landscape['Name']), umap_components))
-                tiles_missing = tiles_missing_yaml.get(self.name, {}).get(landscape['Name'], {})
-                tiles_misplaced = tiles_misplaced_yaml.get(self.name, {}).get(landscape['Name'], {})
-                self.landscapes[landscape['Name']] = Landscape(landscape['Name'], landscape_textures_dir,
-                                                               tiles_misplaced, tiles_missing,
-                                                               landscape_components, texture_components, landscape_root_component)
+        with FoxholeFileProvider(self.pak_path) as p:
+            package = p.try_load_package(self.name, load_mode=EPackageLoadMode.Full)
+        map_name = Path(self.name).stem
+        if package is None:
+            print(f"🚫 Cannot load package {self.name}")
+            return
+        umap_components = package.get_dict()
+        for landscape in filter(self.filter_landscape, umap_components):
+            if self.landscapes_filter and landscape['Name'] not in self.landscapes_filter:
+                continue
+            landscape_components = list(filter(
+                functools.partial(self.filter_landscape_component, landscape_name=landscape['Name']),
+                umap_components))
+            texture_components = list(filter(
+                functools.partial(self.filter_texture_component, landscape_name=landscape['Name']),
+                umap_components
+            ))
+            # Fetching related "RootComponent0" to get Landscape relative position and rotation
+            landscape_root_component = next(
+                filter(functools.partial(self.filter_landscape_root_component, landscape_name=landscape['Name']),
+                       umap_components))
+            tiles_missing = tiles_missing_yaml.get(map_name, {}).get(landscape['Name'], {})
+            tiles_misplaced = tiles_misplaced_yaml.get(map_name, {}).get(landscape['Name'], {})
+            self.landscapes[landscape['Name']] = Landscape(landscape['Name'],
+                                                           tiles_misplaced, tiles_missing,
+                                                           landscape_components, texture_components,
+                                                           landscape_root_component)
         for landscape_name, landscape in self.landscapes.items():
             landscape.process()
-            landscape.generate(self.name, debug=debug)
+            landscape.generate(package, map_name, debug=debug)
