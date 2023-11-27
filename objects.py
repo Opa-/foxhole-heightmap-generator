@@ -34,11 +34,11 @@ class Size:
 
 class Tile(object):
     name: str
-    pos: Point
+    display: bool
 
-    def __init__(self, name: str, pos: Point):
+    def __init__(self, name: str):
         self.name = name
-        self.pos = pos
+        self.display = True
 
     def __eq__(self, other):
         return self.number == other.number
@@ -59,13 +59,21 @@ class Tile(object):
         return self.name
 
     @classmethod
-    def from_landscape_component(cls, landscape_component):
+    def from_heightmap_dict(cls, heightmap_texture_dict):
         try:
-            x = closed_multiple((landscape_component["Properties"]["RelativeLocation"]["X"]), 64)
-            y = closed_multiple((landscape_component["Properties"]["RelativeLocation"]["Y"]), 64)
-            name = re.search(r'Texture2D_\d+',
-                             landscape_component["Properties"]["HeightmapTexture"]["ObjectName"]).group()
-            return cls(name, Point(x, y))
+            heightmap_texture_name = re.search(r'Texture2D_\d+', heightmap_texture_dict["ObjectName"]).group()
+            return cls(heightmap_texture_name)
+        except KeyError as e:
+            print(f"⚠️\tMissing property {e} for {heightmap_texture_dict}")
+            return None
+        except AttributeError as e:
+            print(f"❗\tCannot extract name for {heightmap_texture_dict['ObjectName']}")
+            return None
+
+    @classmethod
+    def from_weightmap_dict(cls, weightmap_textures_dict):
+        try:
+            return [cls(re.search(r'Texture2D_\d+', weightmap["ObjectName"]).group()) for weightmap in weightmap_textures_dict]
         except KeyError as e:
             print(f"⚠️\tMissing property {e} for {landscape_component['Name']}")
             return None
@@ -78,13 +86,71 @@ class Tile(object):
         return int(self.name.split('_')[-1])
 
 
+class LandscapeComponent(object):
+    name: str
+    pos: Point
+    heightmap_tile: Tile
+    weightmap_tiles: List[Tile]
+    road_index: int
+    road_channel: int
+
+    def __init__(self, name: str, pos: Point, heightmap_tile: Tile, weightmap_tiles: List[Tile], road_index: int, road_channel: int):
+        self.name = name
+        self.pos = pos
+        self.heightmap_tile = heightmap_tile
+        self.weightmap_tiles = weightmap_tiles
+
+    def __repr__(self):
+        return self.name
+
+    def __eq__(self, other):
+        return self.heightmap_tile.number == other.heightmap_tile.number
+
+    def __lt__(self, other):
+        return self.heightmap_tile.number < other.heightmap_tile.number
+
+    def __le__(self, other):
+        return self.heightmap_tile.number <= other.heightmap_tile.number
+
+    def __gt__(self, other):
+        return self.heightmap_tile.number > other.heightmap_tile.number
+
+    def __ge__(self, other):
+        return self.heightmap_tile.number >= other.heightmap_tile.number
+
+    def __hash__(self):
+        return self.heightmap_tile.name
+
+    @classmethod
+    def from_dict(cls, landscape_component_dict: Dict):
+        try:
+            x = closed_multiple((landscape_component_dict["Properties"]["RelativeLocation"]["X"]), 64)
+            y = closed_multiple((landscape_component_dict["Properties"]["RelativeLocation"]["Y"]), 64)
+            name = landscape_component_dict["Name"]
+            heightmap_tile = Tile.from_heightmap_dict(landscape_component_dict["Properties"]["HeightmapTexture"])
+            weightmap_tiles = Tile.from_weightmap_dict(landscape_component_dict["Properties"]["WeightmapTextures"])
+            road_index = None
+            road_channel = None
+            for alloc in landscape_component_dict["Properties"]["WeightmapLayerAllocations"]:
+                if alloc["LayerInfo"]["ObjectName"] == "Road_LayerInfo":
+                    road_index = alloc["WeightmapTextureIndex"]
+                    road_channel = alloc["WeightmapTextureChannel"]
+            return cls(name, Point(x, y), heightmap_tile, weightmap_tiles, road_index, road_channel)
+        except KeyError as e:
+            print(f"⚠️\tMissing property {e} for {landscape_component_dict['Name']}")
+            return None
+        except AttributeError as e:
+            print(f"❗\tCannot extract name for {landscape_component_dict['Name']}")
+            return None
+
+
 class Landscape(object):
     name: str
     raw_components: List
     texture_components: Dict
     tiles_misplaced: Dict
     tiles_missing: Dict
-    tiles: Dict[str, Tile]
+    landscape_components: Dict[str, LandscapeComponent]
     top_left: Point
     bottom_right: Point
     relative_location: Vector
@@ -97,7 +163,7 @@ class Landscape(object):
         self.tiles_misplaced = tiles_misplaced
         self.tiles_missing = tiles_missing
         self.texture_components = {texture['Name']: texture for texture in texture_components}
-        self.tiles = dict()
+        self.landscape_components = dict()
         self.top_left = None
         self.bottom_right = None
         # self.padding = Point(0, 0)
@@ -118,12 +184,15 @@ class Landscape(object):
     def __str__(self):
         return self.name
 
-    def add_tile(self, tile):
-        if tile.name in self.tiles.keys():
-            if tile.pos.x <= self.tiles[tile.name].pos.x and tile.pos.y <= self.tiles[tile.name].pos.y:
-                self.tiles[tile.name].pos = tile.pos
+    def add_landscape_component(self, ls_component: LandscapeComponent):
+        existing_ls_components = list(filter(lambda ls: ls[1].heightmap_tile.name == ls_component.heightmap_tile.name and ls[1].heightmap_tile.display == True, self.landscape_components.copy().items()))
+        if existing_ls_components:
+            for _, existing_ls_component in existing_ls_components:
+                if ls_component.pos.x <= existing_ls_component.pos.x and ls_component.pos.y <= existing_ls_component.pos.y:
+                    self.landscape_components[existing_ls_component.name].heightmap_tile.display = False
+                    self.landscape_components[ls_component.name] = ls_component
         else:
-            self.tiles[tile.name] = tile
+            self.landscape_components[ls_component.name] = ls_component
 
     @property
     def width(self):
@@ -133,47 +202,51 @@ class Landscape(object):
     def height(self):
         return self.bottom_right.y - self.top_left.y
 
-    def _update_coord(self, tile: Tile, size: Size):
+    def _update_coord(self, landscape_component: LandscapeComponent, size: Size):
+        if not landscape_component.heightmap_tile.display:  # Relying on heightmap display for now
+            return
         if not self.top_left:
-            self.top_left = Point(tile.pos.x, tile.pos.y)
+            self.top_left = Point(landscape_component.pos.x, landscape_component.pos.y)
         if not self.bottom_right:
-            self.bottom_right = Point(tile.pos.x + size.width, tile.pos.y + size.height)
-        if tile.pos.x < self.top_left.x:
-            self.top_left.x = tile.pos.x
-        if tile.pos.y < self.top_left.y:
-            self.top_left.y = tile.pos.y
-        if tile.pos.x + size.width > self.bottom_right.x:
-            self.bottom_right.x = tile.pos.x + size.width
-        if tile.pos.y + size.height > self.bottom_right.y:
-            self.bottom_right.y = tile.pos.y + size.height
+            self.bottom_right = Point(landscape_component.pos.x + size.width, landscape_component.pos.y + size.height)
+        if landscape_component.pos.x < self.top_left.x:
+            self.top_left.x = landscape_component.pos.x
+        if landscape_component.pos.y < self.top_left.y:
+            self.top_left.y = landscape_component.pos.y
+        if landscape_component.pos.x + size.width > self.bottom_right.x:
+            self.bottom_right.x = landscape_component.pos.x + size.width
+        if landscape_component.pos.y + size.height > self.bottom_right.y:
+            self.bottom_right.y = landscape_component.pos.y + size.height
 
     def process(self):
         for raw_component in self.raw_components:
-            tile = Tile.from_landscape_component(raw_component)
-            if not tile:
+            landscape_component = LandscapeComponent.from_dict(raw_component)
+            if not landscape_component:
                 continue
-            if tile.name in self.tiles_misplaced.keys():
-                tile.pos = Point(self.tiles_misplaced[tile.name]['x'], self.tiles_misplaced[tile.name]['y'])
-            self.add_tile(tile)
+            if landscape_component.heightmap_tile.name in self.tiles_misplaced.keys():
+                landscape_component.pos = Point(self.tiles_misplaced[landscape_component.heightmap_tile.name]['x'], self.tiles_misplaced[landscape_component.heightmap_tile.name]['y'])
+            self.add_landscape_component(landscape_component)
         for tile_name, tile_data in self.tiles_missing.items():
-            tile = Tile(tile_name, Point(tile_data['x'], tile_data['y']))
-            self.add_tile(tile)
-        for tile_name, tile in self.tiles.items():
-            tile_raw_size = self.texture_components[tile.name]['Properties']['ImportedSize']
-            tile_size = Size(tile_raw_size['X'], tile_raw_size['Y'])
-            self._update_coord(self.tiles[tile.name], tile_size)
+            landscape_component = LandscapeComponent(tile_name, Point(tile_data['x'], tile_data['y']), Tile(tile_name), list(), 0, 0)
+            self.add_landscape_component(landscape_component)
+        for _, landscape_component in self.landscape_components.items():
+            raw_size = self.texture_components[landscape_component.heightmap_tile.name]['Properties']['ImportedSize']
+            self._update_coord(landscape_component, Size(raw_size['X'], raw_size['Y']))
 
     def generate(self, package: Package, map_name: str, debug=False):
         if debug is True:
             debug_img = np.zeros((self.height + 500, self.width + 500, 3), np.uint8)
             cv2.rectangle(debug_img, (0, 0), (self.width, self.height), (255, 255, 255), 3)
         heightmap_img = np.zeros((self.height, self.width), np.uint8)
+        # road_img = np.zeros((self.height, self.width), np.uint8)
         normalmap_img = np.zeros((self.height, self.width, 4), np.uint8)
-        for tile_name, tile in sorted(self.tiles.items(), key=lambda x: x[1]):
-            pos_y = tile.pos.y - self.top_left.y
-            pos_x = tile.pos.x - self.top_left.x
+        for _, ls_component in sorted(self.landscape_components.items(), key=lambda x: x[1]):
+            if not ls_component.heightmap_tile.display:
+                continue
+            pos_y = ls_component.pos.y - self.top_left.y
+            pos_x = ls_component.pos.x - self.top_left.x
             try:
-                texture_2d = list(filter(lambda x: x.name.string == tile_name and x.OuterIndex.Name.string == self.name,
+                texture_2d = list(filter(lambda x: x.name.string == ls_component.heightmap_tile.name and x.OuterIndex.Name.string == self.name,
                                          package.ExportMap))[0]
                 tile_img = np.array(texture_2d.exportObject.decode())
                 tile_r, tile_g, tile_b, tile_a = cv2.split(tile_img)
@@ -181,11 +254,19 @@ class Landscape(object):
                 heightmap_img[pos_y: pos_y + tile_r.shape[0], pos_x:pos_x + tile_r.shape[1]] = tile_r
                 tile_normal = cv2.merge([tile_w, tile_a, tile_b, tile_w])
                 normalmap_img[pos_y: pos_y + tile_r.shape[0], pos_x:pos_x + tile_r.shape[1]] = tile_normal
+
+                # if tile.road_texture and tile.road_channel:
+                #     texture_2d = list(filter(
+                #         lambda x: x.name.string == tile.road_texture and x.OuterIndex.Name.string == self.name,
+                #         package.ExportMap))[0]
+                #     texture_road = np.array(texture_2d.exportObject.decode())
+                #     tile_road = texture_road[:, :, tile.road_channel]
+                #     road_img[pos_y: pos_y + tile_road.shape[0], pos_x:pos_x + tile_road.shape[1]] = tile_road
             except IndexError as e:
-                print(f"‼️ {tile_name} not found for {self.name}")
+                print(f"‼️ {ls_component.heightmap_tile.name} not found for {self.name}")
                 pass
             except ValueError as e:
-                print(f"‼️ Could not paste {tile_name} : {e}")
+                print(f"‼️ Could not paste {ls_component.name} : {e}")
             except FileNotFoundError as e:
                 print(f"‼️ Not found {e} for {self.name} landscape")
                 pass
@@ -194,7 +275,7 @@ class Landscape(object):
                 cv2.circle(debug_img, (pos_x, pos_y), 3, random_color, 5)
                 cv2.rectangle(debug_img, (pos_x, pos_y), (pos_x + tile_img.shape[1], pos_y + tile_img.shape[0]),
                               random_color, 3)
-                cv2.putText(debug_img, tile_name.split('_')[-1],
+                cv2.putText(debug_img, str(ls_component.heightmap_tile.number),
                             (pos_x + int(tile_img.shape[1] / 4), pos_y + int(tile_img.shape[0] / 2)),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, random_color, 2)
         _, _, _, mask = cv2.split(normalmap_img)
@@ -202,10 +283,12 @@ class Landscape(object):
         heightmap_img[:, :, 3] = mask
         heightmap_img = rotate_image(heightmap_img, -self.relative_rotation.y)
         normalmap_img = rotate_image(normalmap_img, -self.relative_rotation.y)
+        # road_img = rotate_image(road_img, -self.relative_rotation.y)
         if debug is True:
             cv2.imwrite(f"maps/{map_name}_{self.name}_debug.png", debug_img)
         cv2.imwrite(f"maps/{map_name}_{self.name}_heightmap.png", heightmap_img)
         cv2.imwrite(f"maps/{map_name}_{self.name}_normalmap.png", normalmap_img)
+        # cv2.imwrite(f"maps/{map_name}_{self.name}_roadmap.png", road_img)
         print(f"✅\t{map_name}:{self.name}")
 
 
@@ -249,6 +332,7 @@ class World(object):
             print(f"🚫 Cannot load package {self.name}")
             return
         umap_components = package.get_dict()
+        # Iterate over Landscapes only
         for landscape in filter(self.filter_landscape, umap_components):
             if self.landscapes_filter and landscape['Name'] not in self.landscapes_filter:
                 continue
