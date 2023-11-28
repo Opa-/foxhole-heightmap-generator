@@ -1,4 +1,5 @@
 import functools
+import os
 import random
 import re
 from dataclasses import dataclass
@@ -34,6 +35,7 @@ class Size:
 
 class Tile(object):
     name: str
+    size: Size
     display: bool
 
     def __init__(self, name: str):
@@ -202,9 +204,9 @@ class Landscape(object):
             for _, existing_ls_component in existing_ls_components:
                 if ls_component.pos.x <= existing_ls_component.pos.x and ls_component.pos.y <= existing_ls_component.pos.y:
                     self.landscape_components[existing_ls_component.name].heightmap_tile.display = False
-                    self.landscape_components[ls_component.name] = ls_component
-        else:
-            self.landscape_components[ls_component.name] = ls_component
+                else:
+                    ls_component.heightmap_tile.display = False
+        self.landscape_components[ls_component.name] = ls_component
 
     @property
     def width(self):
@@ -250,7 +252,6 @@ class Landscape(object):
             debug_img = np.zeros((self.height + 500, self.width + 500, 3), np.uint8)
             cv2.rectangle(debug_img, (0, 0), (self.width, self.height), (255, 255, 255), 3)
         heightmap_img = np.zeros((self.height, self.width), np.uint8)
-        # road_img = np.zeros((self.height, self.width), np.uint8)
         normalmap_img = np.zeros((self.height, self.width, 4), np.uint8)
         weightmap_imgs = dict()
         for _, ls_component in sorted(self.landscape_components.items(), key=lambda x: x[1]):
@@ -272,19 +273,19 @@ class Landscape(object):
                     print(f"‼️ Could not paste {ls_component.name} : {e}")
                 except FileNotFoundError as e:
                     print(f"‼️ Not found {e} for {self.name} landscape")
-            for alloc in ls_component.weightmap_allocations:
-                texture_2d = list(filter(lambda x: x.name.string == ls_component.weightmap_tiles[alloc.index].name and x.OuterIndex.Name.string == self.name, package.ExportMap))[0]
+            for w_alloc in ls_component.weightmap_allocations:
+                texture_2d = list(filter(lambda x: x.name.string == ls_component.weightmap_tiles[w_alloc.index].name and x.OuterIndex.Name.string == self.name, package.ExportMap))[0]
                 texture = np.array(texture_2d.exportObject.decode())
-                tile_weightmap = texture[:, :, alloc.channel]
-                if not alloc.name in weightmap_imgs.keys():
-                    weightmap_imgs[alloc.name] = np.zeros((self.height, self.width), np.uint8)
-                weightmap_imgs[alloc.name][pos_y: pos_y + tile_weightmap.shape[0], pos_x:pos_x + tile_weightmap.shape[1]] = tile_weightmap
+                tile_weightmap = texture[:, :, w_alloc.channel]
+                if w_alloc.name not in weightmap_imgs.keys():
+                    weightmap_imgs[w_alloc.name] = np.zeros((self.height, self.width), np.uint8)
+                weightmap_imgs[w_alloc.name][pos_y: pos_y + tile_weightmap.shape[0], pos_x:pos_x + tile_weightmap.shape[1]] = tile_weightmap
             if debug is True:
                 random_color = (random.randrange(150, 255), random.randrange(150, 255), random.randrange(150, 255))
                 cv2.circle(debug_img, (pos_x, pos_y), 3, random_color, 5)
                 cv2.rectangle(debug_img, (pos_x, pos_y), (pos_x + tile_img.shape[1], pos_y + tile_img.shape[0]),
                               random_color, 3)
-                cv2.putText(debug_img, str(ls_component.heightmap_tile.number),
+                cv2.putText(debug_img, ls_component.name,
                             (pos_x + int(tile_img.shape[1] / 4), pos_y + int(tile_img.shape[0] / 2)),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, random_color, 2)
         _, _, _, mask = cv2.split(normalmap_img)
@@ -292,13 +293,14 @@ class Landscape(object):
         heightmap_img[:, :, 3] = mask
         heightmap_img = rotate_image(heightmap_img, -self.relative_rotation.y)
         normalmap_img = rotate_image(normalmap_img, -self.relative_rotation.y)
+        os.makedirs(f"maps/{map_name}/weightmaps", exist_ok=True)
         for weightmap_name, weightmap_img in weightmap_imgs.items():
             weightmap_img = rotate_image(weightmap_img, -self.relative_rotation.y)
-            cv2.imwrite(f"maps/{map_name}_{self.name}_{weightmap_name}.png", weightmap_img)
+            cv2.imwrite(f"maps/{map_name}/weightmaps/{self.name}_{weightmap_name}.png", weightmap_img)
         if debug is True:
-            cv2.imwrite(f"maps/{map_name}_{self.name}_debug.png", debug_img)
-        cv2.imwrite(f"maps/{map_name}_{self.name}_heightmap.png", heightmap_img)
-        cv2.imwrite(f"maps/{map_name}_{self.name}_normalmap.png", normalmap_img)
+            cv2.imwrite(f"maps/{map_name}/{self.name}_debug.png", debug_img)
+        cv2.imwrite(f"maps/{map_name}/{self.name}_heightmap.png", heightmap_img)
+        cv2.imwrite(f"maps/{map_name}/{self.name}_normalmap.png", normalmap_img)
         print(f"✅\t{map_name}:{self.name}")
 
 
