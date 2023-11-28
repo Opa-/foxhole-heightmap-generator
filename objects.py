@@ -86,19 +86,30 @@ class Tile(object):
         return int(self.name.split('_')[-1])
 
 
+class WeightmapAllocation(object):
+    name: str
+    index: int
+    channel: int
+
+    def __init__(self, name: str, index: int, channel: int):
+        self.name = name
+        self.index = index
+        self.channel = channel
+
+
 class LandscapeComponent(object):
     name: str
     pos: Point
     heightmap_tile: Tile
     weightmap_tiles: List[Tile]
-    road_index: int
-    road_channel: int
+    weightmap_allocations: List[WeightmapAllocation]
 
-    def __init__(self, name: str, pos: Point, heightmap_tile: Tile, weightmap_tiles: List[Tile], road_index: int, road_channel: int):
+    def __init__(self, name: str, pos: Point, heightmap_tile: Tile, weightmap_tiles: List[Tile], weightmap_allocations: List[WeightmapAllocation]):
         self.name = name
         self.pos = pos
         self.heightmap_tile = heightmap_tile
         self.weightmap_tiles = weightmap_tiles
+        self.weightmap_allocations = weightmap_allocations
 
     def __repr__(self):
         return self.name
@@ -129,13 +140,14 @@ class LandscapeComponent(object):
             name = landscape_component_dict["Name"]
             heightmap_tile = Tile.from_heightmap_dict(landscape_component_dict["Properties"]["HeightmapTexture"])
             weightmap_tiles = Tile.from_weightmap_dict(landscape_component_dict["Properties"]["WeightmapTextures"])
-            road_index = None
-            road_channel = None
+            weightmap_allocations = list()
             for alloc in landscape_component_dict["Properties"]["WeightmapLayerAllocations"]:
-                if alloc["LayerInfo"]["ObjectName"] == "Road_LayerInfo":
-                    road_index = alloc["WeightmapTextureIndex"]
-                    road_channel = alloc["WeightmapTextureChannel"]
-            return cls(name, Point(x, y), heightmap_tile, weightmap_tiles, road_index, road_channel)
+                weightmap_allocations.append(
+                    WeightmapAllocation(alloc["LayerInfo"]["ObjectName"],
+                                        alloc["WeightmapTextureIndex"],
+                                        alloc["WeightmapTextureChannel"])
+                )
+            return cls(name, Point(x, y), heightmap_tile, weightmap_tiles, weightmap_allocations)
         except KeyError as e:
             print(f"⚠️\tMissing property {e} for {landscape_component_dict['Name']}")
             return None
@@ -227,7 +239,7 @@ class Landscape(object):
                 landscape_component.pos = Point(self.tiles_misplaced[landscape_component.heightmap_tile.name]['x'], self.tiles_misplaced[landscape_component.heightmap_tile.name]['y'])
             self.add_landscape_component(landscape_component)
         for tile_name, tile_data in self.tiles_missing.items():
-            landscape_component = LandscapeComponent(tile_name, Point(tile_data['x'], tile_data['y']), Tile(tile_name), list(), 0, 0)
+            landscape_component = LandscapeComponent(tile_name, Point(tile_data['x'], tile_data['y']), Tile(tile_name), list(), list())
             self.add_landscape_component(landscape_component)
         for _, landscape_component in self.landscape_components.items():
             raw_size = self.texture_components[landscape_component.heightmap_tile.name]['Properties']['ImportedSize']
@@ -240,36 +252,33 @@ class Landscape(object):
         heightmap_img = np.zeros((self.height, self.width), np.uint8)
         # road_img = np.zeros((self.height, self.width), np.uint8)
         normalmap_img = np.zeros((self.height, self.width, 4), np.uint8)
+        weightmap_imgs = dict()
         for _, ls_component in sorted(self.landscape_components.items(), key=lambda x: x[1]):
-            if not ls_component.heightmap_tile.display:
-                continue
             pos_y = ls_component.pos.y - self.top_left.y
             pos_x = ls_component.pos.x - self.top_left.x
-            try:
-                texture_2d = list(filter(lambda x: x.name.string == ls_component.heightmap_tile.name and x.OuterIndex.Name.string == self.name,
-                                         package.ExportMap))[0]
-                tile_img = np.array(texture_2d.exportObject.decode())
-                tile_r, tile_g, tile_b, tile_a = cv2.split(tile_img)
-                tile_w = np.full((tile_a.shape[0], tile_a.shape[1], 1), 255, np.uint8)
-                heightmap_img[pos_y: pos_y + tile_r.shape[0], pos_x:pos_x + tile_r.shape[1]] = tile_r
-                tile_normal = cv2.merge([tile_w, tile_a, tile_b, tile_w])
-                normalmap_img[pos_y: pos_y + tile_r.shape[0], pos_x:pos_x + tile_r.shape[1]] = tile_normal
-
-                # if tile.road_texture and tile.road_channel:
-                #     texture_2d = list(filter(
-                #         lambda x: x.name.string == tile.road_texture and x.OuterIndex.Name.string == self.name,
-                #         package.ExportMap))[0]
-                #     texture_road = np.array(texture_2d.exportObject.decode())
-                #     tile_road = texture_road[:, :, tile.road_channel]
-                #     road_img[pos_y: pos_y + tile_road.shape[0], pos_x:pos_x + tile_road.shape[1]] = tile_road
-            except IndexError as e:
-                print(f"‼️ {ls_component.heightmap_tile.name} not found for {self.name}")
-                pass
-            except ValueError as e:
-                print(f"‼️ Could not paste {ls_component.name} : {e}")
-            except FileNotFoundError as e:
-                print(f"‼️ Not found {e} for {self.name} landscape")
-                pass
+            if ls_component.heightmap_tile.display:
+                try:
+                    texture_2d = list(filter(lambda x: x.name.string == ls_component.heightmap_tile.name and x.OuterIndex.Name.string == self.name,
+                                             package.ExportMap))[0]
+                    tile_img = np.array(texture_2d.exportObject.decode())
+                    tile_r, tile_g, tile_b, tile_a = cv2.split(tile_img)
+                    tile_w = np.full((tile_a.shape[0], tile_a.shape[1], 1), 255, np.uint8)
+                    heightmap_img[pos_y: pos_y + tile_r.shape[0], pos_x:pos_x + tile_r.shape[1]] = tile_r
+                    tile_normal = cv2.merge([tile_w, tile_a, tile_b, tile_w])
+                    normalmap_img[pos_y: pos_y + tile_r.shape[0], pos_x:pos_x + tile_r.shape[1]] = tile_normal
+                except IndexError as e:
+                    print(f"‼️ {ls_component.heightmap_tile.name} not found for {self.name}")
+                except ValueError as e:
+                    print(f"‼️ Could not paste {ls_component.name} : {e}")
+                except FileNotFoundError as e:
+                    print(f"‼️ Not found {e} for {self.name} landscape")
+            for alloc in ls_component.weightmap_allocations:
+                texture_2d = list(filter(lambda x: x.name.string == ls_component.weightmap_tiles[alloc.index].name and x.OuterIndex.Name.string == self.name, package.ExportMap))[0]
+                texture = np.array(texture_2d.exportObject.decode())
+                tile_weightmap = texture[:, :, alloc.channel]
+                if not alloc.name in weightmap_imgs.keys():
+                    weightmap_imgs[alloc.name] = np.zeros((self.height, self.width), np.uint8)
+                weightmap_imgs[alloc.name][pos_y: pos_y + tile_weightmap.shape[0], pos_x:pos_x + tile_weightmap.shape[1]] = tile_weightmap
             if debug is True:
                 random_color = (random.randrange(150, 255), random.randrange(150, 255), random.randrange(150, 255))
                 cv2.circle(debug_img, (pos_x, pos_y), 3, random_color, 5)
@@ -283,12 +292,13 @@ class Landscape(object):
         heightmap_img[:, :, 3] = mask
         heightmap_img = rotate_image(heightmap_img, -self.relative_rotation.y)
         normalmap_img = rotate_image(normalmap_img, -self.relative_rotation.y)
-        # road_img = rotate_image(road_img, -self.relative_rotation.y)
+        for weightmap_name, weightmap_img in weightmap_imgs.items():
+            weightmap_img = rotate_image(weightmap_img, -self.relative_rotation.y)
+            cv2.imwrite(f"maps/{map_name}_{self.name}_{weightmap_name}.png", weightmap_img)
         if debug is True:
             cv2.imwrite(f"maps/{map_name}_{self.name}_debug.png", debug_img)
         cv2.imwrite(f"maps/{map_name}_{self.name}_heightmap.png", heightmap_img)
         cv2.imwrite(f"maps/{map_name}_{self.name}_normalmap.png", normalmap_img)
-        # cv2.imwrite(f"maps/{map_name}_{self.name}_roadmap.png", road_img)
         print(f"✅\t{map_name}:{self.name}")
 
 
